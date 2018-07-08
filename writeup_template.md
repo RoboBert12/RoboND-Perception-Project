@@ -22,7 +22,15 @@ You're reading it!
 
 ### Exercise 1, 2 and 3 pipeline implemented
 #### 1. Complete Exercise 1 steps. Pipeline for filtering and RANSAC plane fitting implemented.
-For this project I used the script [project_template3.py](./pr2_robot/scripts/project_template3.py) .
+For this project I used the script [project_template3.py](./pr2_robot/scripts/project_template3.py). To load the evironment, the following terminal command was executed:
+```python
+roslaunch pr2_robot pick_place_project.launch
+```
+
+In a second window, the object recognition was loaded using this command:
+```python
+rosrun pr2_robot project_template3.py
+```
 
 I started the code by changing the ros message into a point cloud. To deal with the noise, I implemented a statistical outlier filter. I considered the 20 points around each point and set the scale factor to 0.6. This filter helped to remove most of the noise in the signal.
 ```python
@@ -213,31 +221,154 @@ Then in a second terminal I exectued this command to capture the features:
 rosrun pr2_robot capture_features_pr2_100.py
 ```
 
-After geting the inital file, I needed to train it. I used a training file that I developed for exercise 3, modifing it slightly. I used a linear kernal and was able to achive good results after setting the histogram bins to 85. My training file was [train_svm_pr2.py](./pr2_robot/scripts/train_svm_pr2.py) . The confusion matricies can be seen below. 
+This output the training set file [pr2_traing_set_60_3bins.sav](./pr2_robot/scripts/pr2_traing_set_60_3bins.sav)
 
-![CM_raw](./pr2_robot/scripts/CM_raw.png)
-![CM_norm](./pr2_robot/scripts/CM_norm.png)
-
-
+After geting the inital file, I needed to train it. I used a training file that I developed for exercise 3, modifing it slightly. I used a linear kernal and was able to achive good results after setting the histogram bins to 85. My training file was [train_svm_pr2.py](./pr2_robot/scripts/train_svm_pr2.py) .  I trained my SVM using the following command:
 ```python
 rosrun pr2_robot train_svm_pr2.py 
 ```
 
+The confusion matricies can be seen below. They show that the linear kernal does a good job at identifying the objects.
 
+![CM_raw](./pr2_robot/scripts/CM_raw.png)
+![CM_norm](./pr2_robot/scripts/CM_norm.png)
 
+The model was stored in [pr2_model_60_85bins.sav](./pr2_robot/scripts/pr2_model_60_85bins.sav).
 
+Now that the SVM had trained a model, the [project_template3.py](./pr2_robot/scripts/project_template3.py) file needed to make use of it. The model was imported in __name__ , where the other setup takes place.
 
 ```python
-roslaunch pr2_robot pick_place_project.launch
+if __name__ == '__main__':
+
+    # DONE: ROS node initialization
+    rospy.init_node('clustering', anonymous=True)
+    
+    # DONE: Create Subscribers
+    pcl_sub = rospy.Subscriber("/pr2/world/points", pc2.PointCloud2, pcl_callback, queue_size=1)
+
+    # DONE: Create Publishers
+
+    pcl_passed_pub = rospy.Publisher("/pcl_passsed", PointCloud2, queue_size=1)
+    pcl_objects_pub = rospy.Publisher("/pcl_objects", PointCloud2, queue_size=1)
+    pcl_table_pub = rospy.Publisher("/pcl_table", PointCloud2, queue_size=1)
+    pcl_cluster_pub = rospy.Publisher("/pcl_cluster", PointCloud2, queue_size=1)
+    
+#    #For each object    
+#    pcl_obj0_pub = rospy.Publisher("/pcl_object0", PointCloud2, queue_size=1)
+#    pcl_obj1_pub = rospy.Publisher("/pcl_object1", PointCloud2, queue_size=1)
+#    pcl_obj2_pub = rospy.Publisher("/pcl_object2", PointCloud2, queue_size=1)
+#    pcl_obj3_pub = rospy.Publisher("/pcl_object3", PointCloud2, queue_size=1)
+#    pcl_obj4_pub = rospy.Publisher("/pcl_object4", PointCloud2, queue_size=1)
+#    pcl_obj5_pub = rospy.Publisher("/pcl_object5", PointCloud2, queue_size=1)
+#    pcl_obj6_pub = rospy.Publisher("/pcl_object6", PointCloud2, queue_size=1)
+#    pcl_obj7_pub = rospy.Publisher("/pcl_object7", PointCloud2, queue_size=1)
+    
+    object_markers_pub = rospy.Publisher("/object_markers", Marker, queue_size=1)
+    detected_objects_pub = rospy.Publisher("/detected_objects", DetectedObjectsArray, queue_size=1)
+
+    # DONE: Load Model From disk
+#    model = pickle.load(open(os.path.expanduser('~/catkin_ws/src/RoboND-Perception-Project/pr2_robot/scripts/pr2_model_100.sav'), 'rb'))
+#    model = pickle.load(open(os.path.expanduser('~/catkin_ws/src/RoboND-Perception-Project/pr2_robot/scripts/pr2_model_orient.sav'), 'rb'))
+    model = pickle.load(open(os.path.expanduser('~/catkin_ws/src/RoboND-Perception-Project/pr2_robot/scripts/pr2_model_60_85bins.sav'), 'rb'))
+    
+    clf = model['classifier']
+    encoder = LabelEncoder()
+    encoder.classes_ = model['classes']
+    scaler = model['scaler']
+
+    # Initialize color_list
+    get_color_list.color_list = []
+
+    # DONE: Spin while node is not shutdown
+    while not rospy.is_shutdown():
+        rospy.spin()
 ```
+
+Now I needed to idetify what each of my detected objects were. I started by looping through each cluster and building a point cloud for this known, good object. Then I turned that point cloud into a ros message and appended to a group detected_objects_clouds. For inital trouble shooting, I would publish each object to see what the cloud looked like. This helped me to find a major error using the enumerator function early on.
 
 ```python
-rosrun pr2_robot project_template3.py
+# Exercise-3 TODOs:
+    detected_objects_labels = []
+    detected_objects = []
+    detected_objects_clouds =[]
+    
+    # Classify the clusters! (loop through each detected cluster one at a time)
+
+    for obj_num, cloud_indices in enumerate(cluster_indices):
+        obj_temp =[]    
+        for ind, pnt in enumerate(cluster_indices[obj_num]):
+            
+            obj_temp.append([cloud_objects[pnt][0],
+                           cloud_objects[pnt][1],
+                           cloud_objects[pnt][2],
+                           cloud_objects[pnt][3]])
+        
+        good_object_cluster = pcl.PointCloud_PointXYZRGB()
+        good_object_cluster.from_list(obj_temp)
+                    
+    # DONE: convert the cluster from pcl to ROS using helper function
+        ros_good_object_cluster = pcl_to_ros(good_object_cluster)
+        detected_objects_clouds.append(ros_good_object_cluster)
 ```
 
-Here is an example of how to include an image in your writeup.
+The ros message then had its features extracted. These features were fed into the prediction model to get a label assigned to them. The label was setup to be published to RViz to provide a graphic of identification. Next the label and cloud were used to create a detected object and appended to the detected_objects list.
 
-![demo-1](https://user-images.githubusercontent.com/20687560/28748231-46b5b912-7467-11e7-8778-3095172b7b19.png)
+```python
+        # Extract histogram features
+        # DONE: complete this step just as is covered in capture_features.py
+        chists = compute_color_histograms(ros_good_object_cluster, using_hsv=True, nbins=85)
+        normals = get_normals(ros_good_object_cluster)
+        nhists = compute_normal_histograms(normals, nbins=85)
+        feature = np.concatenate((chists, nhists))
+    
+    
+        # Make the prediction, retrieve the label for the result
+        # and add it to detected_objects_labels list
+        prediction = clf.predict(scaler.transform(feature.reshape(1,-1)))
+        label = encoder.inverse_transform(prediction)[0]
+        detected_objects_labels.append(label)
+    
+        # Publish a label into RViz
+        label_pos = list(white_cloud[cloud_indices[0]])
+        label_pos[2] += .4
+        object_markers_pub.publish(make_label(label,label_pos, ind))
+        
+        # Add the detected object to the list of detected objects.
+        do = DetectedObject()
+        do.label = label
+        do.cloud = ros_good_object_cluster
+        detected_objects.append(do)
+```
+
+The detected object labels were printed to the terminal and the detected objects list was published and then passed to the pr2_mover function.
+```python
+    rospy.loginfo('Detected {} objects: {}'.format(len(detected_objects_labels), detected_objects_labels))
+    print('')
+    
+
+    # Publish the list of detected objects
+    # This is the output you'll need to complete the upcoming project!
+    detected_objects_pub.publish(detected_objects)
+
+    # Suggested location for where to invoke your pr2_mover() function within pcl_callback()
+    # Could add some logic to determine whether or not your object detections are robust
+    # before calling pr2_mover()
+    try:
+        pr2_mover(detected_objects)
+    except rospy.ROSInterruptException:
+        pass
+```
+
+The model that I created was able to do a good job at identifying objects. While it initially struggled with the book, I was able to adjust the downsampling to achieve a model that passed all 3 worlds.
+
+##### World 1
+![cluster_cloud](./images/world_picture_1.PNG)
+
+##### World 2
+![cluster_cloud](./images/world_picture_2.PNG)
+
+##### World 3
+![cluster_cloud](./images/world_picture_3.PNG)
 
 ### Pick and Place Setup
 
@@ -247,6 +378,9 @@ And here's another image!
 ![demo-2](https://user-images.githubusercontent.com/20687560/28748286-9f65680e-7468-11e7-83dc-f1a32380b89c.png)
 
 Spend some time at the end to discuss your code, what techniques you used, what worked and why, where the implementation might fail and how you might improve it if you were going to pursue this project further.  
+
+SAMPLE LINK:
+[](./pr2_robot/scripts/)
 
 
 
