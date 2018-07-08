@@ -199,10 +199,10 @@ Then in a second terminal I exectued this command to capture the features:
 rosrun pr2_robot capture_features_pr2_100.py
 ```
 
-After geting the inital file, I needed to train it. I used a training file that I developed for exercise 3, modifing it slightly. I used a linear kernal and was able to achive good results after setting the histogram bins to 85.
+After geting the inital file, I needed to train it. I used a training file that I developed for exercise 3, modifing it slightly. I used a linear kernal and was able to achive good results after setting the histogram bins to 85. My training file was train_svm_pr2.py. The confusion matricies can be seen below. 
 
-![demo-2](https://user-images.githubusercontent.com/20687560/28748286-9f65680e-7468-11e7-83dc-f1a32380b89c.png)
-![demo-2](https://user-images.githubusercontent.com/20687560/28748286-9f65680e-7468-11e7-83dc-f1a32380b89c.png)
+![CM_raw](./pr2_robot/scripts/CM_raw.png)
+![CM_norm](./pr2_robot/scripts/CM_norm.png)
 
 
 ```python
