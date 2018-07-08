@@ -374,6 +374,50 @@ The model that I created was able to do a good job at identifying objects. While
 
 #### 1. For all three tabletop setups (`test*.world`), perform object recognition, then read in respective pick list (`pick_list_*.yaml`). Next construct the messages that would comprise a valid `PickPlace` request output them to `.yaml` format.
 
+For the pick and place setup, I first needed to establish the initialize the variables that I would be working with. Next, I needed to get the pick list and dropbox messages. I created dictionaries from the messages. I chose to go through the dropbox list first. This way I had a dictionary that used the group (red or green) as a key and would return the arm name and drop off possition. Next I went though the pick list and used the object name as the key. Instead of having it return the group, I put the group entry into the dropbox dictionary. That way that the item name would now return the arm name, group, and drop off position. This allowed for less substituion later in the code. I also created 2 variables to track the number of items dropped in each bin.
+
+```python
+    # DONE: Initialize variables
+    TEST_SCENE_NUM = Int32()
+    OBJECT_NAME = String()
+    WHICH_ARM = String()
+    PICK_POSE = Pose()
+    PLACE_POSE = Pose()
+    
+    TEST_SCENE_NUM.data = 3
+    
+    output_list = []
+    
+    # Make the dictionaries
+    object_param_dict = {}
+    dropbox_param_dict = {}    
+
+    # DONE: Get/Read parameters
+    # get parameters
+    object_list_param = rospy.get_param('/object_list')
+    dropbox_param_list = rospy.get_param('/dropbox')
+    
+    # DONE: Parse parameters into individual variables
+    # cycle through drop box params with key [group] mapping to arm name, group 
+    # and position
+    for i in range(0, len(dropbox_param_list)):
+        dropbox_param_dict[dropbox_param_list[i]['group']] = dropbox_param_list[i]
+    
+    # make dictionary for objects
+    for i in range(0, len(object_list_param)):
+        # Make dict object_param where key [name] maps to the [group] 
+        # properties of arm name, group and position
+        object_param_dict[object_list_param[i]['name']] = dropbox_param_dict[object_list_param[i]['group']]        
+    
+    # TODO: Rotate PR2 in place to capture side tables for the collision map (BONUS)
+    
+    r_drops = 0
+    l_drops = 0    
+```
+
+Next, I created a loop to go through the pick list. If 
+
+
 And here's another image! 
 ![demo-2](https://user-images.githubusercontent.com/20687560/28748286-9f65680e-7468-11e7-83dc-f1a32380b89c.png)
 
