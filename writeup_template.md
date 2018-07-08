@@ -52,7 +52,7 @@ def pcl_callback(pcl_msg):
 Next, I down sampled by cloud to make it eaiser to work with. Initally I had ok results with a 0.01 leaf size. However, I had trouble identifying the book and glue. To address that issue I chose to make my leaf size smaller, allowing a richer cloud to be processed. After halving the number twice, I was able to identify the book. It should be noted that for other environments, the leaf size that I used is excessive, but I wanted to be able to use one script for all three environments.
 
 ```python
- # DONE: Voxel Grid Downsampling
+    # DONE: Voxel Grid Downsampling
     # Choose a voxel (also known as leaf) size
     # LOWER NUMBER = HIGH DENSITY
     LEAF_SIZE = .0025
@@ -67,9 +67,63 @@ Next, I down sampled by cloud to make it eaiser to work with. Initally I had ok 
     vox_filtered = vox.filter()
 ```
 
-After down sampling, I needed to filter out the area that the objects apeared in. I did this using 2 pass through filters. The first was a Z axis filter similar to what was used in the exercises. I did need to increase the upper limit, to avoid cutting off the tops of taller objects. I 
+After down sampling, I needed to filter out the area that the objects apeared in. I did this using a pass through filter. The first was a Z axis filter similar to what was used in the exercises. I did need to increase the upper limit, to avoid cutting off the tops of taller objects. After filtering the cloud, published a ros msg with the results. By visualizing this cloud, I saw that the edges of the bins were seen by the robot. This meant that during clustering I would see 2 extra objects. I added a secdond filter in the y axis to eliminate the bins. 
 
+```python
+    # DONE: PassThrough Filter
+    # Create a PassThrough filter object.
+    passthrough = vox_filtered.make_passthrough_filter()
+    
+    # Assign axis and range to the passthrough filter object.
+    filter_axis = 'z'
+    passthrough.set_filter_field_name(filter_axis)
+    axis_min = 0.6
+    axis_max = 1.25
+    passthrough.set_filter_limits(axis_min, axis_max)
 
+    # Apply passthrough filter
+    cloud_passed = passthrough.filter()
+    
+    # also filiter in y axis to get rid of bin corners
+    cloud_passed_z = cloud_passed.make_passthrough_filter()
+    
+    # Assign axis and range to the passthrough filter object.
+    filter_axis = 'y'
+    cloud_passed_z.set_filter_field_name(filter_axis)
+    axis_min = -0.4 
+    axis_max = 0.4
+    cloud_passed_z.set_filter_limits(axis_min, axis_max)
+
+    # Apply passthrough filter
+    cloud_passed = cloud_passed_z.filter()
+    
+    cloud_passed_4msg = copy.deepcopy(cloud_passed)
+```
+Now I needed to remove the table using a RANSAC plane. I implemented the version of this that I used in exercise 1. After I found the plane. I grabbed the indexes of the inliers(table) and outliers(objects). I also created clouds of these objects that were later published.
+
+```python
+    # DONE: RANSAC Plane Segmentation
+    seg = cloud_passed.make_segmenter()
+
+    # Set the model you wish to fit 
+    seg.set_model_type(pcl.SACMODEL_PLANE)
+    seg.set_method_type(pcl.SAC_RANSAC)
+    
+    # Max distance for a point to be considered fitting the model
+    # Experiment with different values for max_distance 
+    # for segmenting the table
+    max_distance = 0.01
+    seg.set_distance_threshold(max_distance)
+    
+    # DONE: Extract inliers and outliers
+    # Call the segment function to obtain set of inlier indices and model coefficients
+    inliers, coefficients = seg.segment()
+    
+    # Extract inliers and outliers
+    # At this point the clouds are different
+    cloud_objects = cloud_passed.extract(inliers, negative=True)
+    cloud_table = cloud_passed.extract(inliers, negative=False)
+```
 
 #### 2. Complete Exercise 2 steps: Pipeline including clustering for segmentation implemented.  
 
