@@ -1,8 +1,4 @@
 ## Project: Perception Pick & Place
-### Writeup Template: You can use this file as a template for your writeup if you want to submit it as a markdown file, but feel free to use some other method and submit a pdf if you prefer.
-
----
-
 
 # Required Steps for a Passing Submission:
 1. Extract features and train an SVM model on new objects (see `pick_list_*.yaml` in `/pr2_robot/config/` for the list of models you'll be trying to identify). 
@@ -13,16 +9,6 @@
 6. Calculate the centroid (average in x, y and z) of the set of points belonging to that each object.
 7. Create ROS messages containing the details of each object (name, pick_pose, etc.) and write these messages out to `.yaml` files, one for each of the 3 scenarios (`test1-3.world` in `/pr2_robot/worlds/`).  [See the example `output.yaml` for details on what the output should look like.](https://github.com/udacity/RoboND-Perception-Project/blob/master/pr2_robot/config/output.yaml)  
 8. Submit a link to your GitHub repo for the project or the Python code for your perception pipeline and your output `.yaml` files (3 `.yaml` files, one for each test world).  You must have correctly identified 100% of objects from `pick_list_1.yaml` for `test1.world`, 80% of items from `pick_list_2.yaml` for `test2.world` and 75% of items from `pick_list_3.yaml` in `test3.world`.
-9. Congratulations!  Your Done!
-
-# Extra Challenges: Complete the Pick & Place
-7. To create a collision map, publish a point cloud to the `/pr2/3d_map/points` topic and make sure you change the `point_cloud_topic` to `/pr2/3d_map/points` in `sensors.yaml` in the `/pr2_robot/config/` directory. This topic is read by Moveit!, which uses this point cloud input to generate a collision map, allowing the robot to plan its trajectory.  Keep in mind that later when you go to pick up an object, you must first remove it from this point cloud so it is removed from the collision map!
-8. Rotate the robot to generate collision map of table sides. This can be accomplished by publishing joint angle value(in radians) to `/pr2/world_joint_controller/command`
-9. Rotate the robot back to its original state.
-10. Create a ROS Client for the “pick_place_routine” rosservice.  In the required steps above, you already created the messages you need to use this service. Checkout the [PickPlace.srv](https://github.com/udacity/RoboND-Perception-Project/tree/master/pr2_robot/srv) file to find out what arguments you must pass to this service.
-11. If everything was done correctly, when you pass the appropriate messages to the `pick_place_routine` service, the selected arm will perform pick and place operation and display trajectory in the RViz window
-12. Place all the objects from your pick list in their respective dropoff box and you have completed the challenge!
-13. Looking for a bigger challenge?  Load up the `challenge.world` scenario and see if you can get your perception pipeline working there!
 
 ## [Rubric](https://review.udacity.com/#!/rubrics/1067/view) Points
 ### Here I will consider the rubric points individually and describe how I addressed each point in my implementation.  
@@ -36,6 +22,54 @@ You're reading it!
 
 ### Exercise 1, 2 and 3 pipeline implemented
 #### 1. Complete Exercise 1 steps. Pipeline for filtering and RANSAC plane fitting implemented.
+I started the code by changing the ros message into a point cloud. To deal with the noise, I implemented a statistical outlier filter. I considered the 20 points around each point and set the scale factor to 0.6. This filter helped to remove most of the noise in the signal.
+```python
+# Callback function for your Point Cloud Subscriber
+def pcl_callback(pcl_msg):
+
+# Exercise-2 TODOs:
+
+    # DONE: Convert ROS msg to PCL data
+    plc_cloud =  ros_to_pcl(pcl_msg)
+
+    # DONE: Statistical Outlier Filtering
+    # Much like the previous filters, we start by creating a filter object: 
+    outlier_filter = plc_cloud.make_statistical_outlier_filter()
+    
+    # Set the number of neighboring points to analyze for any given point
+    outlier_filter.set_mean_k(20)
+    
+    # Set threshold scale factor
+    x = .6
+    
+    # Any point with a mean distance larger than global (mean distance+x*std_dev) will be considered outlier
+    outlier_filter.set_std_dev_mul_thresh(x)
+    
+    # Finally call the filter function for magic
+    outlier_filtered = outlier_filter.filter()    
+```
+
+Next, I down sampled by cloud to make it eaiser to work with. Initally I had ok results with a 0.01 leaf size. However, I had trouble identifying the book and glue. To address that issue I chose to make my leaf size smaller, allowing a richer cloud to be processed. After halving the number twice, I was able to identify the book. It should be noted that for other environments, the leaf size that I used is excessive, but I wanted to be able to use one script for all three environments.
+
+```python
+ # DONE: Voxel Grid Downsampling
+    # Choose a voxel (also known as leaf) size
+    # LOWER NUMBER = HIGH DENSITY
+    LEAF_SIZE = .0025
+
+    # Create a VoxelGrid filter object for our input point cloud
+    vox = outlier_filtered.make_voxel_grid_filter()    
+    
+    # Set the voxel (or leaf) size 
+    vox.set_leaf_size(LEAF_SIZE, LEAF_SIZE, LEAF_SIZE)
+    
+    # Call the filter function to obtain the resultant downsampled point cloud
+    vox_filtered = vox.filter()
+```
+
+After down sampling, I needed to filter out the area that the objects apeared in. I did this using 2 pass through filters. The first was a Z axis filter similar to what was used in the exercises. I did need to increase the upper limit, to avoid cutting off the tops of taller objects. I 
+
+
 
 #### 2. Complete Exercise 2 steps: Pipeline including clustering for segmentation implemented.  
 
