@@ -22,7 +22,7 @@ You're reading it!
 
 ### Exercise 1, 2 and 3 pipeline implemented
 #### 1. Complete Exercise 1 steps. Pipeline for filtering and RANSAC plane fitting implemented.
-For this project I used the script project_template3.py.
+For this project I used the script [project_template3.py](./pr2_robot/scripts/project_template3.py) .
 
 I started the code by changing the ros message into a point cloud. To deal with the noise, I implemented a statistical outlier filter. I considered the 20 points around each point and set the scale factor to 0.6. This filter helped to remove most of the noise in the signal.
 ```python
@@ -101,6 +101,10 @@ After down sampling, I needed to filter out the area that the objects apeared in
     
     cloud_passed_4msg = copy.deepcopy(cloud_passed)
 ```
+Filtered Cloud:
+
+![pass_cloud](./images/pass_cloud.PNG)
+
 Now I needed to remove the table using a RANSAC plane. I implemented the version of this that I used in exercise 1. After I found the plane. I grabbed the indexes of the inliers(table) and outliers(objects). I also created clouds of these objects that were later published.
 
 ```python
@@ -126,6 +130,13 @@ Now I needed to remove the table using a RANSAC plane. I implemented the version
     cloud_objects = cloud_passed.extract(inliers, negative=True)
     cloud_table = cloud_passed.extract(inliers, negative=False)
 ```
+Table Cloud:
+
+![table_cloud](./images/table_cloud.PNG)
+
+Objects Cloud:
+
+![objects_cloud](./images/objects_cloud.PNG)
 
 #### 2. Complete Exercise 2 steps: Pipeline including clustering for segmentation implemented.  
 Now that the cloud containing all of the objects was found, I needed to segment them. To do this I applied Euclidean clustering. This clustering was prefered because you don't need to know how many clusters there are ahead of time. It took some trial and error to determine the min and max cluster sizes. These nubers also needed to be revise when the leaf size changed. Eventualy I settle on a tolerance of 0.2, with cluster ranging from 500 to 7000 points. This allowed me to capture the correct number of objects in all scenes. After finding all of the obejects, I looped through to build an array of clouds that represent each found cluster with a unique color. I published this cloud and the others at this step as well.
@@ -186,9 +197,12 @@ Now that the cloud containing all of the objects was found, I needed to segment 
     pcl_cluster_pub.publish(ros_cluster_cloud)
 ```
 
+Cluster Cloud:
+
+![cluster_cloud](./images/cluster_cloud.PNG)
 
 #### 2. Complete Exercise 3 Steps.  Features extracted and SVM trained.  Object recognition implemented.
-Now that the objects were found, I needed to clasify them. To do this I needed to first get the features of the objects and train a SVM. To obtain the object features, I used the sensor_stick model. I copied the script that was used to get the features in exercise 3 and modified it. I called the new script capture_features_pr2_100.py because I was originally going to capture 100 clouds per image. I later revised that to 50. I also modified the compute_color_histograms and compute_normal_histograms from the features.py script. I added the ability to input the number of bins in the function to make the scripts more versitle. After some trial and error, I ended up using 85 bins, that allwed for 3 full values of colors per bin (255/3 = 85). The capture_features_pr2_100 would take the histograms of colors and normals and save them to a file for training the SVM later. I went through several iterations in order to get a set that gave me accurate results. I tried to balance the number of bins to give enough seperation, but to not be too broad that features were unrecognazable. The capture_features_pr2_100 script was run after the training model was launched. In one terminal I executed the following command:
+Now that the objects were found, I needed to clasify them. To do this I needed to first get the features of the objects and train a SVM. To obtain the object features, I used the sensor_stick model. I copied the script that was used to get the features in exercise 3 and modified it. I called the new script [capture_features_pr2_100.py](./pr2_robot/scripts/capture_features_pr2_100.py) because I was originally going to capture 100 clouds per image. I later revised that to 60. I also modified the compute_color_histograms and compute_normal_histograms from the [features.py](./supporting_scripts/features.py) script. I added the ability to input the number of bins in the function to make the scripts more versitle. After some trial and error, I ended up using 85 bins, that allwed for 3 full values of colors per bin (255/3 = 85). The capture_features_pr2_100 would take the histograms of colors and normals and save them to a file for training the SVM later. I went through several iterations in order to get a set that gave me accurate results. I tried to balance the number of bins to give enough seperation, but to not be too broad that features were unrecognazable. The capture_features_pr2_100 script was run after the training model was launched. In one terminal I executed the following command:
 
 ```python
 roslaunch sensor_stick training.launch
@@ -199,7 +213,7 @@ Then in a second terminal I exectued this command to capture the features:
 rosrun pr2_robot capture_features_pr2_100.py
 ```
 
-After geting the inital file, I needed to train it. I used a training file that I developed for exercise 3, modifing it slightly. I used a linear kernal and was able to achive good results after setting the histogram bins to 85. My training file was train_svm_pr2.py. The confusion matricies can be seen below. 
+After geting the inital file, I needed to train it. I used a training file that I developed for exercise 3, modifing it slightly. I used a linear kernal and was able to achive good results after setting the histogram bins to 85. My training file was [train_svm_pr2.py](./pr2_robot/scripts/train_svm_pr2.py) . The confusion matricies can be seen below. 
 
 ![CM_raw](./pr2_robot/scripts/CM_raw.png)
 ![CM_norm](./pr2_robot/scripts/CM_norm.png)
