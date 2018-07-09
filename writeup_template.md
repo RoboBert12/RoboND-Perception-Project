@@ -221,7 +221,7 @@ Then in a second terminal I execute this command to capture the features:
 rosrun pr2_robot capture_features_pr2_100.py
 ```
 
-This output the training set file [pr2_traing_set_60_3bins.sav](./pr2_robot/scripts/pr2_traing_set_60_3bins.sav)
+This output the training set file [training_set_pr2_60_85bins.sav](./pr2_robot/scripts/training_set_pr2_60_85bins.sav)
 
 After getting the initial file, I needed to train it. I used a training file that I developed for exercise 3, modifying it slightly. I used a linear kernel and was able to achieve good results after setting the histogram bins to 85. My training file was [train_svm_pr2.py](./pr2_robot/scripts/train_svm_pr2.py) .  I trained my SVM using the following command:
 ```python
