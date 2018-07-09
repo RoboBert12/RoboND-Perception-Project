@@ -521,7 +521,7 @@ Finally outside of the loop, the yaml file was created. The results, after runni
 
 ```python
     # Output your request parameters into output yaml file
-    send_to_yaml(os.path.expanduser('~/catkin_ws/src/RoboND-Perception-Project/pr2_robot/scripts'+"output_"+str(3)+".yaml"), output_list)
+    send_to_yaml(os.path.expanduser('~/catkin_ws/src/RoboND-Perception-Project/pr2_robot/scripts/'+"output_"+str(3)+".yaml"), output_list)
     send_to_yaml("output_"+str(3)+".yaml", output_list)
 ```
 Overall, the script worked well, after fixing some initial bugs. One improvement that I thought about implementing was to characterize the normals for the top vs bottom portion of the objects in an effort to better identify the glue. Since its shape is more complex, it would be easier to identify with this method. I also thought about modifying the capture_features script to show the objects in positions that they could be stabley placed on the table and have them revolved relative to the camera. For example, the sticky notes could be placed on either of it's 6 sides, but the glue could only be placed upright or laying on its front or back face.
