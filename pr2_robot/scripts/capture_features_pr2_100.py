@@ -80,5 +80,5 @@ if __name__ == '__main__':
         delete_model()
 
 
-    pickle.dump(labeled_features, open(os.path.expanduser('~/catkin_ws/src/RoboND-Perception-Project/pr2_robot/scripts/pr2_traing_set_60_3bins.sav'), 'wb'))
+    pickle.dump(labeled_features, open(os.path.expanduser('~/catkin_ws/src/RoboND-Perception-Project/pr2_robot/scripts/training_set_pr2_60_85bins.sav'), 'wb'))
     pickle.dump(labeled_features, open('training_set_pr2_60_3bins.sav', 'wb'))
