@@ -59,7 +59,7 @@ def pcl_callback(pcl_msg):
     outlier_filtered = outlier_filter.filter()    
 ```
 
-Next, I down sampled by cloud to make it eaiser to work with. Initally I had ok results with a 0.01 leaf size. However, I had trouble identifying the book and glue. To address that issue I chose to make my leaf size smaller, allowing a richer cloud to be processed. After halving the number twice, I was able to identify the book. It should be noted that for other environments, the leaf size that I used is excessive, but I wanted to be able to use one script for all three environments.
+Next, I down sampled by cloud to make it easier to work with. Initially I had ok results with a 0.01 leaf size. However, I had trouble identifying the book and glue. To address that issue I chose to make my leaf size smaller, allowing a richer cloud to be processed. After halving the number twice, I was able to identify the book. It should be noted that for other environments, the leaf size that I used is excessive, but I wanted to be able to use one script for all three environments.
 
 ```python
     # DONE: Voxel Grid Downsampling
@@ -77,7 +77,7 @@ Next, I down sampled by cloud to make it eaiser to work with. Initally I had ok 
     vox_filtered = vox.filter()
 ```
 
-After down sampling, I needed to filter out the area that the objects apeared in. I did this using a pass through filter. The first was a Z axis filter similar to what was used in the exercises. I did need to increase the upper limit, to avoid cutting off the tops of taller objects. After filtering the cloud, published a ros msg with the results. By visualizing this cloud, I saw that the edges of the bins were seen by the robot. This meant that during clustering I would see 2 extra objects. I added a secdond filter in the y axis to eliminate the bins. 
+After downsampling, I needed to filter out the area that the objects appeared in. I did this using a pass through filter. The first was a Z axis filter similar to what was used in the exercises. I did need to increase the upper limit, to avoid cutting off the tops of taller objects. After filtering the cloud, published a ros msg with the results. By visualizing this cloud, I saw that the edges of the bins were seen by the robot. This meant that during clustering I would see 2 extra objects. I added a second filter in the y axis to eliminate the bins. 
 
 ```python
     # DONE: PassThrough Filter
@@ -147,7 +147,7 @@ Objects Cloud:
 ![objects_cloud](./images/objects_cloud.PNG)
 
 #### 2. Complete Exercise 2 steps: Pipeline including clustering for segmentation implemented.  
-Now that the cloud containing all of the objects was found, I needed to segment them. To do this I applied Euclidean clustering. This clustering was prefered because you don't need to know how many clusters there are ahead of time. It took some trial and error to determine the min and max cluster sizes. These nubers also needed to be revise when the leaf size changed. Eventualy I settle on a tolerance of 0.2, with cluster ranging from 500 to 7000 points. This allowed me to capture the correct number of objects in all scenes. After finding all of the obejects, I looped through to build an array of clouds that represent each found cluster with a unique color. I published this cloud and the others at this step as well.
+Now that the cloud containing all of the objects was found, I needed to segment them. To do this I applied Euclidean clustering. This clustering was prefered because you don't need to know how many clusters there are ahead of time. It took some trial and error to determine the min and max cluster sizes. These numbers also needed to be revise when the leaf size changed. Eventually I settle on a tolerance of 0.2, with cluster ranging from 500 to 7000 points. This allowed me to capture the correct number of objects in all scenes. After finding all of the objects, I looped through to build an array of clouds that represent each found cluster with a unique color. I published this cloud and the others at this step as well.
 
 ```python
     # DONE: Euclidean Clustering
@@ -210,25 +210,25 @@ Cluster Cloud:
 ![cluster_cloud](./images/cluster_cloud.PNG)
 
 #### 2. Complete Exercise 3 Steps.  Features extracted and SVM trained.  Object recognition implemented.
-Now that the objects were found, I needed to clasify them. To do this I needed to first get the features of the objects and train a SVM. To obtain the object features, I used the sensor_stick model. I copied the script that was used to get the features in exercise 3 and modified it. I called the new script [capture_features_pr2_100.py](./pr2_robot/scripts/capture_features_pr2_100.py) because I was originally going to capture 100 clouds per image. I later revised that to 60. I also modified the compute_color_histograms and compute_normal_histograms from the [features.py](./supporting_scripts/features.py) script. I added the ability to input the number of bins in the function to make the scripts more versitle. After some trial and error, I ended up using 85 bins, that allwed for 3 full values of colors per bin (255/3 = 85). The capture_features_pr2_100 would take the histograms of colors and normals and save them to a file for training the SVM later. I went through several iterations in order to get a set that gave me accurate results. I tried to balance the number of bins to give enough seperation, but to not be too broad that features were unrecognazable. The capture_features_pr2_100 script was run after the training model was launched. In one terminal I executed the following command:
+Now that the objects were found, I needed to classify them. To do this I needed to first get the features of the objects and train a SVM. To obtain the object features, I used the sensor_stick model. I copied the script that was used to get the features in exercise 3 and modified it. I called the new script [capture_features_pr2_100.py](./pr2_robot/scripts/capture_features_pr2_100.py) because I was originally going to capture 100 clouds per image. I later revised that to 60. I also modified the compute_color_histograms and compute_normal_histograms from the [features.py](./supporting_scripts/features.py) script. I added the ability to input the number of bins in the function to make the scripts more versatile. After some trial and error, I ended up using 85 bins, that allowed for 3 full values of colors per bin (255/3 = 85). The capture_features_pr2_100 would take the histograms of colors and normals and save them to a file for training the SVM later. I went through several iterations in order to get a set that gave me accurate results. I tried to balance the number of bins to give enough separation, but to not be too broad that features were unrecognizable. The capture_features_pr2_100 script was run after the training model was launched. In one terminal I executed the following command:
 
 ```python
 roslaunch sensor_stick training.launch
 ```
 
-Then in a second terminal I exectued this command to capture the features:
+Then in a second terminal I execute this command to capture the features:
 ```python
 rosrun pr2_robot capture_features_pr2_100.py
 ```
 
 This output the training set file [pr2_traing_set_60_3bins.sav](./pr2_robot/scripts/pr2_traing_set_60_3bins.sav)
 
-After geting the inital file, I needed to train it. I used a training file that I developed for exercise 3, modifing it slightly. I used a linear kernal and was able to achive good results after setting the histogram bins to 85. My training file was [train_svm_pr2.py](./pr2_robot/scripts/train_svm_pr2.py) .  I trained my SVM using the following command:
+After getting the initial file, I needed to train it. I used a training file that I developed for exercise 3, modifying it slightly. I used a linear kernel and was able to achieve good results after setting the histogram bins to 85. My training file was [train_svm_pr2.py](./pr2_robot/scripts/train_svm_pr2.py) .  I trained my SVM using the following command:
 ```python
 rosrun pr2_robot train_svm_pr2.py 
 ```
 
-The confusion matricies can be seen below. They show that the linear kernal does a good job at identifying the objects.
+The confusion matrices can be seen below. They show that the linear kernel does a good job at identifying the objects.
 
 ![CM_raw](./pr2_robot/scripts/CM_raw.png)
 ![CM_norm](./pr2_robot/scripts/CM_norm.png)
@@ -284,7 +284,7 @@ if __name__ == '__main__':
         rospy.spin()
 ```
 
-Now I needed to idetify what each of my detected objects were. I started by looping through each cluster and building a point cloud for this known, good object. Then I turned that point cloud into a ros message and appended to a group detected_objects_clouds. For inital trouble shooting, I would publish each object to see what the cloud looked like. This helped me to find a major error using the enumerator function early on.
+Now I needed to identify what each of my detected objects were. I started by looping through each cluster and building a point cloud for this known, good object. Then I turned that point cloud into a ros message and appended to a group detected_objects_clouds. For initial troubleshooting, I would publish each object to see what the cloud looked like. This helped me to find a major error using the enumerator function early on.
 
 ```python
 # Exercise-3 TODOs:
@@ -374,7 +374,7 @@ The model that I created was able to do a good job at identifying objects. While
 
 #### 1. For all three tabletop setups (`test*.world`), perform object recognition, then read in respective pick list (`pick_list_*.yaml`). Next construct the messages that would comprise a valid `PickPlace` request output them to `.yaml` format.
 
-For the pick and place setup, I first needed to establish the initialize the variables that I would be working with. Next, I needed to get the pick list and dropbox messages. I created dictionaries from the messages. I chose to go through the dropbox list first. This way I had a dictionary that used the group (red or green) as a key and would return the arm name and drop off possition. Next I went though the pick list and used the object name as the key. Instead of having it return the group, I put the group entry into the dropbox dictionary. That way that the item name would now return the arm name, group, and drop off position. This allowed for less substituion later in the code. I also created 2 variables to track the number of items dropped in each bin.
+For the pick and place set up, I first needed to establish the initialize the variables that I would be working with. I also assigned the TEST_SCENE_NUM, manually during this step. Next, I needed to get the pick list and dropbox messages. I created dictionaries from the messages. I chose to go through the dropbox list first. This way I had a dictionary that used the group (red or green) as a key and would return the arm name and drop off position. Next I went through the pick list and used the object name as the key. Instead of having it return the group, I put the group entry into the dropbox dictionary. That way that the item name would now return the arm name, group, and drop off position. This allowed for less substitution later in the code. I also created 2 variables to track the number of items dropped in each bin. The script then printed out text telling how many items from the pick list would be looped through.
 
 ```python
     # DONE: Initialize variables
@@ -412,19 +412,120 @@ For the pick and place setup, I first needed to establish the initialize the var
     # TODO: Rotate PR2 in place to capture side tables for the collision map (BONUS)
     
     r_drops = 0
-    l_drops = 0    
+    l_drops = 0
+        
+    print('Looping through '+str(len(object_list_param))+' objects')
+    print('') 
 ```
 
-Next, I created a loop to go through the pick list. If 
+Next, I created a loop to go through the pick list. The first action of the loop was to print which object is being searched for. Then a flag is set indicating that the object hasn't be found yet. A sub-loop that goes through all of the detected items tries to find the item from the list. If the object is not found, a message to that effect is printed and the next item from the pick list is searched for. 
 
+If the object is found, a message is printed telling the user that it has been found. The OBJECT_NAME is assigned, and WHICH_ARM is determined using the dictionary object_param_dict. The object's centroid is then found and assigned to the PICK_POSE. To introduce some variation for the drop off, I would modify the y position of the bin by 0.06 and the x by 0.2. I used the number if items returned to each bin to ensure unique placement of up to 6 items per bin. They would either be left or right by 0.06 and either 0.2 froward, 0.2 backward, or on center front to back. These modifications were applied to the dictionary output for position and saved to PLACE_POSE. With all of the components assigned, a yaml dictionary was created using the provided function. This dictionary was then added to the list of dictionaries called output_list. A message was then sent to the pick_place routine to have the arm pick up the objects.
 
-And here's another image! 
-![demo-2](https://user-images.githubusercontent.com/20687560/28748286-9f65680e-7468-11e7-83dc-f1a32380b89c.png)
+```python
+    # DONE: Loop through the pick list
+    for object_to_pick in object_param_dict.keys():
+        print('Looking for '+object_to_pick)
+        
+        # set flag to know that object was found        
+        obj_found = False        
+        
+        # Cycle through the detected objects to find the one that is needed
+        for idx, detected in enumerate(object_list):
+            
+            # See if this is the one                                  
+            if detected.label == object_to_pick:
+                obj_found = True
+                break
+        
+        # decide what to do (found vs not found)
+        if  obj_found:
+            print(object_to_pick+' was found')
+            
+            # Grab name for 'pick_place_routine' service
+            OBJECT_NAME.data = object_to_pick            
+            
+            # DONE: Assign the arm to be used for pick_place
+            WHICH_ARM.data = object_param_dict[object_to_pick]['name']
+            
+            # DONE: Get the PointCloud for a given object and obtain its centroid
+            obj_pnt_cloud_array = ros_to_pcl(detected.cloud).to_array()
+            centroid = np.mean(obj_pnt_cloud_array, axis=0)[:3]
+             
+            # Give the pick pose
+            PICK_POSE.position.x = np.asscalar(centroid[0])
+            PICK_POSE.position.y = np.asscalar(centroid[1])
+            PICK_POSE.position.z = np.asscalar(centroid[2])
+            PICK_POSE.orientation.x = 0.0
+            PICK_POSE.orientation.y = 0.0
+            PICK_POSE.orientation.z = 0.0
+            PICK_POSE.orientation.w = 0.0    
 
-Spend some time at the end to discuss your code, what techniques you used, what worked and why, where the implementation might fail and how you might improve it if you were going to pursue this project further.  
+            y_mod = float(0.06) # left to right
+            x_mod = float(0.2) # Front to back
+            
+            # DONE: Create 'place_pose' for the object
+            if WHICH_ARM.data == 'right':
+                r_drops += 1
+                drops = copy.deepcopy(r_drops)
+            else:
+                l_drops += 1
+                drops = copy.deepcopy(l_drops)
+            
+            # some variation
+            if np.mod(drops,2) == 1:
+                y_mod = -y_mod
+            
+            x_mod = float((np.mod(drops,3) -1) * x_mod)
 
-SAMPLE LINK:
-[](./pr2_robot/scripts/)
+                
+            drop_off_pnt = object_param_dict[object_to_pick]['position']
 
+            PLACE_POSE.position.x = drop_off_pnt[0] + x_mod
+            PLACE_POSE.position.y = drop_off_pnt[1] + y_mod
+            PLACE_POSE.position.z = drop_off_pnt[2]
+            PLACE_POSE.orientation.x = 0.0
+            PLACE_POSE.orientation.y = 0.0
+            PLACE_POSE.orientation.z = 0.0
+            PLACE_POSE.orientation.w = 0.0
+            
+            
+            # DONE: Create a list of dictionaries (made with make_yaml_dict()) for later output to yaml format
+            # Add the object's yaml dict to the output_list
+            obj_yaml_dict = make_yaml_dict(TEST_SCENE_NUM, WHICH_ARM,
+                                           OBJECT_NAME, PICK_POSE,
+                                           PLACE_POSE)
+                                           
+                                           
+            output_list.append(obj_yaml_dict)
+            
+            # Wait for 'pick_place_routine' service to come up
+            rospy.wait_for_service('pick_place_routine')
+    
+            try:
+                pick_place_routine = rospy.ServiceProxy('pick_place_routine', PickPlace)
+    
+                # DONE: Insert your message variables to be sent as a service request
+                resp = pick_place_routine(TEST_SCENE_NUM, OBJECT_NAME, WHICH_ARM, PICK_POSE, PLACE_POSE)
+    
+                print ("Response: ",resp.success)
+    
+            except rospy.ServiceException, e:
+                print "Service call failed: %s"%e
+             
+        else:
+            print(object_to_pick+' was NOT found') 
+```
 
+Finally outside of the loop, the yaml file was created. The results, after running each world, were [output_1.yaml](./pr2_robot/scripts/output_1.yaml), [output_2.yaml](./pr2_robot/scripts/output_2.yaml), and [output_3.yaml](./pr2_robot/scripts/output_3.yaml).
 
+```python
+    # Output your request parameters into output yaml file
+    send_to_yaml(os.path.expanduser('~/catkin_ws/src/RoboND-Perception-Project/pr2_robot/scripts'+"output_"+str(3)+".yaml"), output_list)
+    send_to_yaml("output_"+str(3)+".yaml", output_list)
+```
+Overall, the script worked well, after fixing some initial bugs. One improvement that I thought about implementing was to characterize the normals for the top vs bottom portion of the objects in an effort to better identify the glue. Since its shape is more complex, it would be easier to identify with this method. I also thought about modifying the capture_features script to show the objects in positions that they could be stabley placed on the table and have them revolved relative to the camera. For example, the sticky notes could be placed on either of it's 6 sides, but the glue could only be placed upright or laying on its front or back face.
+
+Finally, the other arm could be used to remove n obstruction. For instance, in world 3 let's assume that the model can detect glue but is misidentifying it because the book is blocking it. Since glue is not detected by the loop, a special process could be launched. The algorithm could notice that the glue object is a small cloud that is being obscured by the book. If glue needs to be lifted by the left arm, the right arm could remove the book and the cloud could be reanalyzed. the book could then be returned to its original location.
+
+I am interested in future improvements, but I am looking forward to the next challenge and completing this class.
